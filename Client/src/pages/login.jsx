@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {authAPI} from "../api/apis";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -14,10 +15,17 @@ function Login() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Login data:", formData);
-    // Add your login logic here
+
+    try {
+        const response = await authAPI.login(formData);
+        console.log("Login successful:", response.data);
+    }
+    catch (err) {
+        console.log("Login error:", err);
+    }
   };
 
   return (

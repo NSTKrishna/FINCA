@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {authAPI} from "../api/apis";
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -16,14 +17,21 @@ function Signup() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
     console.log("Signup data:", formData);
-    // Add your signup logic here
+    try {
+        const response = await authAPI.signup(formData);
+        console.log("Signup successful:", response.data);
+    }
+    catch (err) {
+        console.log("Signup error:", err);
+    }
+
   };
 
   return (
