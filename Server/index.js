@@ -1,13 +1,17 @@
 const express = require('express');
-const app = express();
-const port = 3000;
+const dotenv = require('dotenv');
+const cookieParser = require('cookie-parser');
 
+dotenv.config();
+const app = express();
+
+app.use(cookieParser());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
+const mainRoutes = require('./Routes/mainRoutes');
+app.use("/api", mainRoutes);
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server is running at http://localhost:${process.env.PORT}`);
 });
