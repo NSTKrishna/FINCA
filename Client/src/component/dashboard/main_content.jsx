@@ -21,8 +21,11 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const MainContent = () => {
+  const { user } = useAuth();
+
   // Sample data - in a real app, this would come from your API
   const metrics = [
     {
@@ -137,9 +140,16 @@ const MainContent = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {user?.name?.split(" ")[0] || "User"}!
+          </h1>
           <p className="text-muted-foreground">
-            Welcome back! Here's your financial overview.
+            Here's your financial overview for{" "}
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
+            .
           </p>
         </div>
         <div className="flex items-center space-x-2">

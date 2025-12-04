@@ -3,6 +3,8 @@ import Signup from "./pages/signup";
 import Login from "./pages/login";
 import LandingPage from "./pages/landing";
 import Dashboard from "./pages/dashboard";
+import UploadPage from "./pages/upload";
+import { AuthProvider } from "./context/AuthContext";
 import {
   BrowserRouter as Router,
   Route,
@@ -12,15 +14,18 @@ import {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/landing" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/upload" element={<UploadPage />} />
+          <Route path="/landing" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
