@@ -29,7 +29,7 @@ function ReportPage() {
         try {
             setIsLoading(true);
 
-            const response = await axios.get("http://localhost:3000/api/upload/user-documents", {
+            const response = await axios.get("https://finca.onrender.com/api/upload/user-documents", {
                 headers: getAuthHeaders(),
                 withCredentials: true,
             });
@@ -71,7 +71,7 @@ function ReportPage() {
         setShowSummaryModal(true);
 
         try {
-            const response = await axios.get(`http://localhost:3000/api/upload/summarize/${encodeURIComponent(file.fileId)}`, {
+            const response = await axios.get(`https://finca.onrender.com/api/upload/summarize/${encodeURIComponent(file.fileId)}`, {
                 headers: getAuthHeaders(),
                 withCredentials: true,
             });
@@ -93,7 +93,7 @@ function ReportPage() {
 
         try {
             // Optimistic update or set loading state could be nice, but simple removal after success is safe
-            const response = await axios.delete(`http://localhost:3000/api/upload/${encodeURIComponent(fileId)}`, {
+            const response = await axios.delete(`https://finca.onrender.com/api/upload/${encodeURIComponent(fileId)}`, {
                 headers: getAuthHeaders(),
                 withCredentials: true,
             });

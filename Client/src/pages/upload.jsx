@@ -118,7 +118,7 @@ const UploadPage = () => {
       }, 200);
 
       // Make API call to upload file
-      const response = await fetch("http://localhost:3000/api/upload/single", {
+      const response = await fetch("https://finca.onrender.com/api/upload/single", {
         method: "POST",
         body: formData,
         headers: {
@@ -253,8 +253,8 @@ const UploadPage = () => {
         <CardContent>
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragOver
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 hover:border-primary/50"
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/25 hover:border-primary/50"
               }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}

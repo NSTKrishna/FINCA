@@ -34,7 +34,7 @@ const MainContent = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/upload/user-documents", {
+        const response = await axios.get("https://finca.onrender.com/api/upload/user-documents", {
           headers: getAuthHeaders(),
           withCredentials: true,
         });
