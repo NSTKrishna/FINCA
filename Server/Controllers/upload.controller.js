@@ -90,6 +90,7 @@ const uploadPDF = (req, res) => {
               fileId: req.file.filename,
               size: req.file.size,
               userId: req.user.id,
+              // parsedText: text, // You might want to save the parsed text
             },
           });
 
@@ -261,10 +262,139 @@ const getUserDocuments = async (req, res) => {
   }
 };
 
+// Initialize Gemini
+// NOTE: Make sure GEMINI_API_KEY is in .env
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error("CRITICAL ERROR: GEMINI_API_KEY is not defined in environment variables.");
+}
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require("axios");
+const genAI = new GoogleGenerativeAI(apiKey || "dummy_key_to_prevent_init_crash");
+
+const summarizeDocument = async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ success: false, message: "Server configuration error: Gemini API Key is missing." });
+    }
+
+    const { fileId } = req.params;
+    const userId = req.user.id;
+
+    console.log(`Debug: Summarizing fileId: ${fileId} for user: ${userId}`);
+
+    // 1. Get file URL and check for existing analysis
+    const document = await prisma.document.findFirst({
+      where: { fileId: fileId, userId: userId }
+    });
+
+    if (!document) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    // Check if analysis already exists
+    if (document.analysis) {
+      console.log("Debug: Returning cached analysis from DB.");
+      return res.status(200).json({
+        success: true,
+        data: document.analysis
+      });
+    }
+
+    console.log("Debug: Found document URL:", document.fileUrl);
+
+    // 2. Download the PDF buffer
+    console.log("Debug: Downloading PDF...");
+    const response = await axios.get(document.fileUrl, { responseType: "arraybuffer" });
+    const pdfBuffer = response.data;
+    console.log(`Debug: Downloaded PDF, size: ${pdfBuffer.length} bytes`);
+
+    // 3. Extract text
+    console.log("Debug: Extracting text with pdf2json...");
+    const PDFParser = require("pdf2json");
+
+    const text = await new Promise((resolve, reject) => {
+      const pdfParser = new PDFParser(null, 1); // 1 = raw text
+
+      pdfParser.on("pdfParser_dataError", errData => reject(errData.parserError));
+      pdfParser.on("pdfParser_dataReady", pdfData => {
+        const rawText = pdfParser.getRawTextContent();
+        resolve(rawText);
+      });
+
+      pdfParser.parseBuffer(pdfBuffer);
+    });
+    console.log(`Debug: Extracted text length: ${text ? text.length : 0}`);
+
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({ success: false, message: "Could not extract text from PDF. It might be scanned or empty." });
+    }
+
+    // 4. Call Gemini API
+    console.log("Debug: Calling Gemini API...");
+    // Using gemini-2.0-flash as listed in available models
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    // JSON Prompt
+    const prompt = `Analyze the following financial/business document and return a JSON object with the following structure:
+    {
+        "summary": "A concise summary of the document",
+        "key_figures": ["Key figure 1", "Key figure 2"],
+        "dates": ["Important date 1", "Important date 2"],
+        "topics": ["Topic 1", "Topic 2"]
+    }
+    Ensure the response is valid JSON. Do not include markdown formatting like \`\`\`json.
+    
+    Document Text:
+    ${text.substring(0, 30000)}`;
+
+    const result = await model.generateContent(prompt);
+    let summaryText = result.response.text();
+    console.log("Debug: Gemini response received.");
+
+    // Clean up potential markdown formatting if Gemini adds it despite instructions
+    summaryText = summaryText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    let summaryJson;
+    try {
+      summaryJson = JSON.parse(summaryText);
+    } catch (e) {
+      console.error("Failed to parse Gemini response as JSON:", summaryText);
+      // Fallback if not valid JSON
+      summaryJson = {
+        summary: summaryText,
+        key_figures: [],
+        dates: [],
+        topics: []
+      };
+    }
+
+    // 5. Save analysis to DB
+    console.log("Debug: Saving analysis to DB...");
+    await prisma.document.update({
+      where: { id: document.id },
+      data: { analysis: summaryJson }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: summaryJson
+    });
+
+  } catch (error) {
+    console.error("Summarization error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to summarize document: " + error.message
+    });
+  }
+};
+
 module.exports = {
   uploadPDF,
   deleteFile,
   getFileInfo,
   getUserDocuments,
+  summarizeDocument
 };
 

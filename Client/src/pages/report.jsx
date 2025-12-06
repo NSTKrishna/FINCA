@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Navigation from "../component/layout/navbar";
 import { useAuth } from "../context/AuthContext";
-import { FileText, Download, Calendar, HardDrive, Loader2, AlertCircle, Trash2 } from "lucide-react";
+import { FileText, Download, Calendar, HardDrive, Loader2, AlertCircle, Trash2, Sparkles, CheckCircle2 } from "lucide-react";
 import {
     Table,
     TableBody,
@@ -28,12 +28,6 @@ function ReportPage() {
     const fetchDocuments = async () => {
         try {
             setIsLoading(true);
-            // Ensure we hit the correct endpoint. Assuming base URL is configured in axios or using relative path if proxy set.
-            // If using absolute path in other places, match that consistency.
-            // Based on previous files, it seems we might need the full URL or relative if proxy is set.
-            // Let's assume relative path /api/upload/user-documents works (standard vite proxy setup)
-            // or we can use the same axios instance 'authAPI' or similar if generic. 
-            // For now, using axios directly with relative path.
 
             const response = await axios.get("http://localhost:3000/api/upload/user-documents", {
                 headers: getAuthHeaders(),
@@ -63,6 +57,34 @@ function ReportPage() {
         // Placeholder for view action - could open in new tab
         if (file.fileUrl) {
             window.open(file.fileUrl, "_blank");
+        }
+    };
+
+    // Summary State
+    const [summaryData, setSummaryData] = useState(null);
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [showSummaryModal, setShowSummaryModal] = useState(false);
+
+    const handleSummarize = async (file) => {
+        setIsSummarizing(true);
+        setSummaryData(null);
+        setShowSummaryModal(true);
+
+        try {
+            const response = await axios.get(`http://localhost:3000/api/upload/summarize/${encodeURIComponent(file.fileId)}`, {
+                headers: getAuthHeaders(),
+                withCredentials: true,
+            });
+
+            if (response.data.success) {
+                setSummaryData(response.data.data);
+            }
+        } catch (err) {
+            console.error("Summarize error:", err);
+            const errorMessage = err.response?.data?.message || err.message || "Failed to generate summary. Please try again.";
+            setSummaryData({ summary: `Error: ${errorMessage}` });
+        } finally {
+            setIsSummarizing(false);
         }
     };
 
@@ -163,6 +185,10 @@ function ReportPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex items-center justify-end gap-2">
+                                                        <Button variant="ghost" size="sm" onClick={() => handleSummarize(doc)}>
+                                                            <Sparkles className="h-4 w-4 text-primary mr-1" />
+                                                            Analyze
+                                                        </Button>
                                                         <Button variant="ghost" size="sm" onClick={() => verifyFile(doc)}>
                                                             View
                                                         </Button>
@@ -179,6 +205,93 @@ function ReportPage() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* AI Analysis Modal */}
+                {showSummaryModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="bg-card w-full max-w-2xl rounded-xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                            <div className="p-6 border-b border-border flex justify-between items-center bg-muted/10">
+                                <h3 className="text-xl font-semibold flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-primary" />
+                                    AI Analysis
+                                </h3>
+                                <Button variant="ghost" size="icon" onClick={() => setShowSummaryModal(false)}>
+                                    X
+                                </Button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto flex-1">
+                                {isSummarizing ? (
+                                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                                        <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+                                        <p>Analyzing document structure and figures...</p>
+                                    </div>
+                                ) : summaryData ? (
+                                    <div className="space-y-6">
+                                        {/* Executive Summary */}
+                                        <div>
+                                            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Executive Summary</h4>
+                                            <p className="text-foreground leading-relaxed bg-muted/20 p-4 rounded-lg border border-border/50">
+                                                {summaryData.summary}
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Key Figures */}
+                                            {summaryData.key_figures?.length > 0 && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Key Figures</h4>
+                                                    <ul className="space-y-2">
+                                                        {summaryData.key_figures.map((fig, i) => (
+                                                            <li key={i} className="flex items-start gap-2 text-sm">
+                                                                <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                                                                <span className="font-medium">{fig}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            {/* Important Dates */}
+                                            {summaryData.dates?.length > 0 && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Important Dates</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {summaryData.dates.map((date, i) => (
+                                                            <Badge key={i} variant="secondary" className="font-mono">
+                                                                {date}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Topics */}
+                                        {summaryData.topics?.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Topics Detected</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {summaryData.topics.map((topic, i) => (
+                                                        <Badge key={i} variant="outline">
+                                                            {topic}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-muted-foreground">No analysis available.</div>
+                                )}
+                            </div>
+
+                            <div className="p-4 border-t border-border bg-muted/20 flex justify-end">
+                                <Button onClick={() => setShowSummaryModal(false)}>Close</Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

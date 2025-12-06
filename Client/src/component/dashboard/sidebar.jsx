@@ -37,7 +37,6 @@ const Sidebar = () => {
       href: "/reports",
       icon: FileText,
       current: location.pathname === "/reports",
-      badge: "12",
     },
     {
       name: "Upload Data",

@@ -1,4 +1,5 @@
 const express = require('express');
+// Force restart for Prisma Client update
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require("cors");

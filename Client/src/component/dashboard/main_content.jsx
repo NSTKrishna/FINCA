@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,157 +10,124 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,
-  TrendingDown,
-  DollarSign,
   FileText,
   Upload,
   Download,
-  BarChart3,
-  PieChart,
   Calendar,
   AlertCircle,
-  CheckCircle,
+  CheckCircle2,
   Clock,
+  HardDrive,
+  Sparkles,
+  PieChart,
+  BarChart3
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import axios from "axios";
 
 const MainContent = () => {
-  const { user } = useAuth();
+  const { user, getAuthHeaders } = useAuth();
+  const [documents, setDocuments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [latestAnalysis, setLatestAnalysis] = useState(null);
 
-  // Sample data - in a real app, this would come from your API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/api/upload/user-documents", {
+          headers: getAuthHeaders(),
+          withCredentials: true,
+        });
+
+        if (response.data.success) {
+          const docs = response.data.data;
+          setDocuments(docs);
+
+          // Find latest document with analysis
+          const analyzedDoc = docs.find(d => d.analysis);
+          if (analyzedDoc) {
+            setLatestAnalysis({
+              ...analyzedDoc.analysis,
+              fileName: analyzedDoc.fileName,
+              date: analyzedDoc.uploadedAt
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const formatSize = (bytes) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // derived metrics
+  const totalDocs = documents.length;
+  const analyzedDocs = documents.filter(d => d.analysis).length;
+  const totalSize = documents.reduce((acc, curr) => acc + curr.size, 0);
+
   const metrics = [
     {
-      title: "Total Revenue",
-      value: "₹2,45,000",
-      change: "+12.5%",
-      changeType: "positive",
-      icon: DollarSign,
-      description: "vs last month",
-    },
-    {
-      title: "Total Expenses",
-      value: "₹1,85,000",
-      change: "-8.2%",
-      changeType: "positive",
-      icon: TrendingDown,
-      description: "vs last month",
-    },
-    {
-      title: "Net Profit",
-      value: "₹60,000",
-      change: "+18.7%",
-      changeType: "positive",
-      icon: TrendingUp,
-      description: "vs last month",
-    },
-    {
-      title: "Reports Generated",
-      value: "24",
-      change: "+4",
-      changeType: "positive",
+      title: "Total Documents",
+      value: totalDocs.toString(),
       icon: FileText,
-      description: "this month",
+      description: "uploaded files",
+      color: "text-blue-500",
+    },
+    {
+      title: "Analyzed Reports",
+      value: analyzedDocs.toString(),
+      icon: Sparkles,
+      description: "processed by AI",
+      color: "text-purple-500",
+    },
+    {
+      title: "Storage Used",
+      value: formatSize(totalSize),
+      icon: HardDrive,
+      description: "cloud storage",
+      color: "text-orange-500",
+    },
+    {
+      title: "Latest Activity",
+      value: documents.length > 0 ? new Date(documents[0].uploadedAt).toLocaleDateString() : "-",
+      icon: Clock,
+      description: "last upload",
+      color: "text-green-500",
     },
   ];
-
-  const recentReports = [
-    {
-      id: 1,
-      name: "GST Summary - November 2024",
-      type: "GST Report",
-      status: "completed",
-      date: "2024-11-30",
-      size: "2.4 MB",
-    },
-    {
-      id: 2,
-      name: "P&L Statement Q4 2024",
-      type: "Financial Statement",
-      status: "processing",
-      date: "2024-11-28",
-      size: "1.8 MB",
-    },
-    {
-      id: 3,
-      name: "Audit Report 2024",
-      type: "Audit Report",
-      status: "completed",
-      date: "2024-11-25",
-      size: "3.2 MB",
-    },
-    {
-      id: 4,
-      name: "Cash Flow Analysis",
-      type: "Analysis Report",
-      status: "failed",
-      date: "2024-11-20",
-      size: "0 MB",
-    },
-  ];
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "processing":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case "failed":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "completed":
-        return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            Completed
-          </Badge>
-        );
-      case "processing":
-        return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-            Processing
-          </Badge>
-        );
-      case "failed":
-        return (
-          <Badge variant="secondary" className="bg-red-100 text-red-800">
-            Failed
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome back, {user?.name?.split(" ")[0] || "User"}!
           </h1>
           <p className="text-muted-foreground">
-            Here's your financial overview for{" "}
-            {new Date().toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}
-            .
+            Overview of your financial documents and AI insights.
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
             <Calendar className="mr-2 h-4 w-4" />
-            Last 30 days
+            Refresh Data
           </Button>
-          <Button size="sm">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Data
+          <Button size="sm" asChild>
+            <a href="/upload">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload New
+            </a>
           </Button>
         </div>
       </div>
@@ -167,157 +135,149 @@ const MainContent = () => {
       {/* Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric, index) => (
-          <Card key={index}>
+          <Card key={index} className="border-l-4 border-l-primary/20 hover:border-l-primary transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {metric.title}
               </CardTitle>
-              <metric.icon className="h-4 w-4 text-muted-foreground" />
+              <metric.icon className={`h-4 w-4 ${metric.color}`} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metric.value}</div>
-              <p className="text-xs text-muted-foreground flex items-center">
-                <span
-                  className={`inline-flex items-center ${
-                    metric.changeType === "positive"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {metric.changeType === "positive" ? (
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-3 w-3" />
-                  )}
-                  {metric.change}
-                </span>
-                <span className="ml-1">{metric.description}</span>
+              <p className="text-xs text-muted-foreground">
+                {metric.description}
               </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Revenue Trends</CardTitle>
-            <CardDescription>
-              Monthly revenue for the past 6 months
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-lg">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Chart visualization would go here
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Revenue: ₹2,45,000
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Latest AI Analysis Section */}
+      {latestAnalysis ? (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-500" />
+            Latest Strategic Insights
+            <Badge variant="outline" className="ml-2 font-normal text-muted-foreground">
+              from {latestAnalysis.fileName}
+            </Badge>
+          </h2>
 
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Expense Breakdown</CardTitle>
-            <CardDescription>
-              Category-wise expense distribution
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-lg">
-              <div className="text-center">
-                <PieChart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Pie chart would go here
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            {/* Executive Summary Card */}
+            <Card className="col-span-4 bg-gradient-to-br from-card to-primary/5 border-primary/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Executive Summary
+                </CardTitle>
+                <CardDescription>AI-generated overview of the document</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="leading-relaxed text-muted-foreground">
+                  {latestAnalysis.summary}
                 </p>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Operations: 45%</p>
-                  <p>Marketing: 25%</p>
-                  <p>Other: 30%</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {latestAnalysis.topics?.map((topic, i) => (
+                    <Badge key={i} variant="secondary">{topic}</Badge>
+                  ))}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Key Figures Card */}
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  Key Figures
+                </CardTitle>
+                <CardDescription>Extracted financial metrics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {latestAnalysis.key_figures && latestAnalysis.key_figures.length > 0 ? (
+                    latestAnalysis.key_figures.slice(0, 5).map((fig, i) => (
+                      <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-muted/40 text-sm">
+                        <div className="mt-0.5 h-2 w-2 rounded-full bg-green-500 shrink-0" />
+                        <span className="font-medium">{fig}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground italic">No key figures detected.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <Sparkles className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
+            <h3 className="text-lg font-semibold">No Analysis Available Yet</h3>
+            <p className="text-muted-foreground max-w-sm mt-2 mb-4">
+              Upload a financial document and click "Analyze" in the Reports section to see AI-powered insights here.
+            </p>
+            <Button variant="outline" asChild>
+              <a href="/upload">Upload Document</a>
+            </Button>
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      {/* Recent Reports */}
+      {/* Recent Activity / Reports List */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Reports</CardTitle>
+          <CardTitle>Recent Documents</CardTitle>
           <CardDescription>
-            Your latest generated reports and their status
+            Your latest uploaded files and their status
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentReports.map((report) => (
-              <div
-                key={report.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    {getStatusIcon(report.status)}
+          {documents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No documents found.</div>
+          ) : (
+            <div className="space-y-4">
+              {documents.slice(0, 5).map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      {doc.analysis ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-yellow-500" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{doc.fileName}</p>
+                      <p className="text-xs text-muted-foreground uppercase">
+                        {doc.fileName.split('.').pop()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{report.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {report.type}
-                    </p>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatSize(doc.size)}
+                      </p>
+                    </div>
+                    {doc.analysis ? (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Analyzed</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">Pending</Badge>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">
-                      {report.date}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {report.size}
-                    </p>
-                  </div>
-                  {getStatusBadge(report.status)}
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks to get you started</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Upload className="h-6 w-6" />
-              <span className="text-sm">Upload Data</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <FileText className="h-6 w-6" />
-              <span className="text-sm">Generate Report</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <BarChart3 className="h-6 w-6" />
-              <span className="text-sm">View Analytics</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Download className="h-6 w-6" />
-              <span className="text-sm">Export Data</span>
-            </Button>
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
