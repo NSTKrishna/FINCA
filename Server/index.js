@@ -1,5 +1,4 @@
 const express = require('express');
-// Force restart for Prisma Client update
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require("cors");
@@ -9,7 +8,7 @@ const app = express();
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "https://finca.onrender.com"],
   credentials: true
 }));
 
