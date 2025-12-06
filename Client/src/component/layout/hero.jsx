@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles } from "lucide-react"
+import { Link } from "react-router-dom"
+import { useAuth } from "../../context/AuthContext"
 
 export function Hero() {
+  const { isAuthenticated } = useAuth();
   return (
     <section className="relative overflow-hidden pt-32 pb-24 lg:pt-40 lg:pb-32">
       <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-transparent" />
@@ -22,9 +25,11 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button size="lg" className="group bg-primary text-primary-foreground hover:bg-primary/90">
-              Start Free Trial
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <Button size="lg" className="group bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+              <Link to={isAuthenticated ? "/dashboard" : "/signup"}>
+                {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
             </Button>
           </div>
 

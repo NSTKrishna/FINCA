@@ -3,9 +3,9 @@ const router = express.Router();
 const { authMiddleware } = require("../MIddlewares/auth.middleware");
 const {
   uploadPDF,
-  uploadMultiplePDFs,
   deleteFile,
   getFileInfo,
+  getUserDocuments,
 } = require("../Controllers/upload.controller");
 
 // Apply authentication middleware to all upload routes
@@ -16,6 +16,9 @@ router.post("/single", uploadPDF);
 
 // Delete a file
 router.delete("/:fileId", deleteFile);
+
+// Get all user documents
+router.get("/user-documents", getUserDocuments);
 
 // Get file information
 router.get("/:fileId", getFileInfo);

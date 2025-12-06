@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "../../context/AuthContext";
 
 function Navigation() {
+  const { isAuthenticated } = useAuth();
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
@@ -30,25 +32,25 @@ function Navigation() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden md:inline-flex"
-            asChild
-          >
-            <Link to="/login">Sign In</Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden md:inline-flex"
-            asChild
-          >
-            <Link to="/dashboard">Dashboard</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to="/signup">Get Started</Link>
-          </Button>
+          {isAuthenticated ? (
+            <Button size="sm" asChild>
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden md:inline-flex"
+                asChild
+              >
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/signup">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>

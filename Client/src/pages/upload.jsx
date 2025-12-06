@@ -127,6 +127,7 @@ const UploadPage = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           }),
         },
+        credentials: "include", // Ensure cookies are sent with request
       });
 
       clearInterval(progressInterval);
@@ -251,11 +252,10 @@ const UploadPage = () => {
         </CardHeader>
         <CardContent>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragOver
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragOver
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-primary/50"
-            }`}
+              }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
