@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Navigation from "../component/layout/navbar";
 import { useAuth } from "../context/AuthContext";
-import { FileText, Download, Calendar, HardDrive, Loader2, AlertCircle, Trash2, Sparkles, CheckCircle2 } from "lucide-react";
+import { FileText, Download, Calendar, HardDrive, Loader2, AlertCircle, Trash2, Sparkles, CheckCircle2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
     Table,
     TableBody,
@@ -13,25 +13,45 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
+import { Input } from "@/components/ui/input"; // Import Input
+import { api } from "../api/apis";
 
 function ReportPage() {
     const [documents, setDocuments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+
+    // Search, Filter, Sort State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [sortBy, setSortBy] = useState("uploadedAt");
+    const [sortOrder, setSortOrder] = useState("desc");
+
     const { getAuthHeaders } = useAuth();
 
     useEffect(() => {
-        fetchDocuments();
-    }, []);
+        // Debounce search to avoid too many requests
+        const timeoutId = setTimeout(() => {
+            fetchDocuments();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, startDate, endDate, sortBy, sortOrder]);
 
     const fetchDocuments = async () => {
         try {
             setIsLoading(true);
 
-            const response = await axios.get("https://finca.onrender.com/api/upload/user-documents", {
+            const response = await api.get("/upload/user-documents", {
                 headers: getAuthHeaders(),
                 withCredentials: true,
+                params: {
+                    search: searchQuery,
+                    startDate,
+                    endDate,
+                    sortBy,
+                    sortOrder,
+                },
             });
 
             if (response.data.success) {
@@ -60,6 +80,20 @@ function ReportPage() {
         }
     };
 
+    const handleSort = (field) => {
+        if (sortBy === field) {
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        } else {
+            setSortBy(field);
+            setSortOrder("asc"); // Default to asc for new field
+        }
+    };
+
+    const getSortIcon = (field) => {
+        if (sortBy !== field) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+        return sortOrder === "asc" ? <ArrowUp className="h-4 w-4 ml-1" /> : <ArrowDown className="h-4 w-4 ml-1" />;
+    };
+
     // Summary State
     const [summaryData, setSummaryData] = useState(null);
     const [isSummarizing, setIsSummarizing] = useState(false);
@@ -71,7 +105,7 @@ function ReportPage() {
         setShowSummaryModal(true);
 
         try {
-            const response = await axios.get(`https://finca.onrender.com/api/upload/summarize/${encodeURIComponent(file.fileId)}`, {
+            const response = await api.get(`/upload/summarize/${encodeURIComponent(file.fileId)}`, {
                 headers: getAuthHeaders(),
                 withCredentials: true,
             });
@@ -93,7 +127,7 @@ function ReportPage() {
 
         try {
             // Optimistic update or set loading state could be nice, but simple removal after success is safe
-            const response = await axios.delete(`https://finca.onrender.com/api/upload/${encodeURIComponent(fileId)}`, {
+            const response = await api.delete(`/upload/${encodeURIComponent(fileId)}`, {
                 headers: getAuthHeaders(),
                 withCredentials: true,
             });
@@ -135,6 +169,47 @@ function ReportPage() {
                         <CardDescription>
                             A list of all PDF documents you have uploaded for processing.
                         </CardDescription>
+
+                        {/* Search and Filter Controls */}
+                        <div className="mt-4 flex flex-col md:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search by name..."
+                                    className="pl-8"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="date"
+                                    className="w-[150px]"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                />
+                                <span className="flex items-center text-muted-foreground">-</span>
+                                <Input
+                                    type="date"
+                                    className="w-[150px]"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            </div>
+                            {(searchQuery || startDate || endDate) && (
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => {
+                                        setSearchQuery("");
+                                        setStartDate("");
+                                        setEndDate("");
+                                    }}
+                                >
+                                    Clear
+                                </Button>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -156,9 +231,24 @@ function ReportPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Document Name</TableHead>
-                                            <TableHead>Date Uploaded</TableHead>
-                                            <TableHead>Size</TableHead>
+                                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("fileName")}>
+                                                <div className="flex items-center">
+                                                    Document Name
+                                                    {getSortIcon("fileName")}
+                                                </div>
+                                            </TableHead>
+                                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("uploadedAt")}>
+                                                <div className="flex items-center">
+                                                    Date Uploaded
+                                                    {getSortIcon("uploadedAt")}
+                                                </div>
+                                            </TableHead>
+                                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("size")}>
+                                                <div className="flex items-center">
+                                                    Size
+                                                    {getSortIcon("size")}
+                                                </div>
+                                            </TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>

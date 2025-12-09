@@ -3,7 +3,6 @@ const { getUser } = require("../utils/auth");
 async function authMiddleware(req, res, next) {
     let token = req.cookies.token;
 
-    // Debug logging
     console.log("Auth Debug - Cookies:", req.cookies);
     console.log("Auth Debug - Headers:", req.headers);
     console.log("Auth Debug - Authorization Header:", req.headers.authorization);

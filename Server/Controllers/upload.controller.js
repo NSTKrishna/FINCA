@@ -235,18 +235,57 @@ const getFileInfo = async (req, res) => {
   }
 };
 
-// Get all documents for the authenticated user
+// Get all documents for the authenticated user with search, filter, and sort
 const getUserDocuments = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { search, startDate, endDate, sortBy, sortOrder } = req.query;
+
+    console.log("Debug: getUserDocuments params:", { search, startDate, endDate, sortBy, sortOrder });
+
+    // Build where clause
+    const where = {
+      userId: userId,
+    };
+
+    if (search) {
+      where.fileName = {
+        contains: search,
+        mode: "insensitive",
+      };
+    }
+
+    if (startDate || endDate) {
+      where.uploadedAt = {};
+      if (startDate) {
+        where.uploadedAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Set end date to end of the day if needed, or just strict comparison
+        // Assuming endDate is just a date string, let's treat it inclusively
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.uploadedAt.lte = end;
+      }
+    }
+
+    // Build orderBy clause
+    let orderBy = {};
+    if (sortBy && sortOrder) {
+      // Allowed sort fields
+      const allowedSortFields = ["fileName", "uploadedAt", "size"];
+      if (allowedSortFields.includes(sortBy)) {
+        orderBy[sortBy] = sortOrder.toLowerCase() === "asc" ? "asc" : "desc";
+      } else {
+        orderBy = { uploadedAt: "desc" };
+      }
+    } else {
+      orderBy = { uploadedAt: "desc" };
+    }
 
     const documents = await prisma.document.findMany({
-      where: {
-        userId: userId,
-      },
-      orderBy: {
-        uploadedAt: "desc",
-      },
+      where: where,
+      orderBy: orderBy,
     });
 
     res.status(200).json({
@@ -262,8 +301,6 @@ const getUserDocuments = async (req, res) => {
   }
 };
 
-// Initialize Gemini
-// NOTE: Make sure GEMINI_API_KEY is in .env
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
   console.error("CRITICAL ERROR: GEMINI_API_KEY is not defined in environment variables.");

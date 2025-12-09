@@ -1,5 +1,5 @@
 import axios from "axios";
-const API = "https://finca.onrender.com"
+const API = "http://localhost:3000"
 export const api = axios.create({
   baseURL: `${API}/api`,
   timeout: 10000,
