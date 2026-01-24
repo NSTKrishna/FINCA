@@ -46,21 +46,6 @@ const Sidebar = () => {
     },
   ];
 
-  const bottomNavigation = [
-    {
-      name: "Settings",
-      href: "/settings",
-      icon: Settings,
-      current: location.pathname === "/settings",
-    },
-    {
-      name: "Help",
-      href: "/help",
-      icon: HelpCircle,
-      current: location.pathname === "/help",
-    },
-  ];
-
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r border-border">
       {/* Logo */}
